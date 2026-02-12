@@ -1,49 +1,31 @@
+name: Spring Boot Build
 
-  name: Spring Boot CI/CD
+on:
+  push:
+    branches:
+      - main
 
-  # Trigger on push to main branch
-  on:
-    push:
-      branches:
-        - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-  jobs:
-    build-and-deploy:
-      runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      steps:
-        # 1️⃣ Checkout code
-        - name: Checkout code
-          uses: actions/checkout@v3
+      - name: Set up Java 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-        # 2️⃣ Set up JDK
-        - name: Set up Java 17
-          uses: actions/setup-java@v3
-          with:
-            java-version: '17'
-            distribution: 'temurin'
+      - name: Cache Maven
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
-        # 3️⃣ Cache Maven dependencies
-        - name: Cache Maven
-          uses: actions/cache@v3
-          with:
-            path: ~/.m2/repository
-            key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-            restore-keys: |
-              ${{ runner.os }}-maven-
-
-        # 4️⃣ Build Spring Boot app
-        - name: Build with Maven
-          run: mvn clean package -DskipTests
-
-        # 5️⃣ Deploy to Railway
-        - name: Deploy to Railway
-          env:
-            DB_HOST: shuttle.proxy.rlwy.net
-            DB_PORT: 32837
-            DB_NAME: railway
-            DB_USER: root
-            DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          run: |
-            curl -fsSL https://railway.app/install.sh | sh
-            railway up --detach
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
